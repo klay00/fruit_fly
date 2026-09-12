@@ -1,0 +1,166 @@
+{
+  "B_min5_full": [
+    {
+      "drive_hz": 28,
+      "mn9_hz": 0.0,
+      "mn9_sd": 0.0,
+      "active": 62
+    },
+    {
+      "drive_hz": 37,
+      "mn9_hz": 0.2,
+      "mn9_sd": 0.4,
+      "active": 76
+    },
+    {
+      "drive_hz": 50,
+      "mn9_hz": 2.4,
+      "mn9_sd": 2.37,
+      "active": 175
+    },
+    {
+      "drive_hz": 100,
+      "mn9_hz": 54.7,
+      "mn9_sd": 6.83,
+      "active": 369
+    },
+    {
+      "drive_hz": 150,
+      "mn9_hz": 73.0,
+      "mn9_sd": 3.77,
+      "active": 372
+    },
+    {
+      "drive_hz": 250,
+      "mn9_hz": 92.0,
+      "mn9_sd": 4.54,
+      "active": 417
+    }
+  ],
+  "C_corridor3": [
+    {
+      "drive_hz": 28,
+      "mn9_hz": 0.0,
+      "mn9_sd": 0.0,
+      "active": 58
+    },
+    {
+      "drive_hz": 37,
+      "mn9_hz": 0.2,
+      "mn9_sd": 0.6,
+      "active": 75
+    },
+    {
+      "drive_hz": 50,
+      "mn9_hz": 1.7,
+      "mn9_sd": 1.68,
+      "active": 124
+    },
+    {
+      "drive_hz": 100,
+      "mn9_hz": 54.9,
+      "mn9_sd": 4.35,
+      "active": 354
+    },
+    {
+      "drive_hz": 150,
+      "mn9_hz": 75.0,
+      "mn9_sd": 5.59,
+      "active": 347
+    },
+    {
+      "drive_hz": 250,
+      "mn9_hz": 95.5,
+      "mn9_sd": 4.7,
+      "active": 383
+    }
+  ],
+  "A_full_min1": [
+    {
+      "drive_hz": 25,
+      "mn9_hz": 0.0,
+      "mn9_sd": 0.0,
+      "active": 65
+    },
+    {
+      "drive_hz": 28,
+      "mn9_hz": 0.0,
+      "mn9_sd": 0.0,
+      "active": 69
+    },
+    {
+      "drive_hz": 37,
+      "mn9_hz": 1.3,
+      "mn9_sd": 0.9,
+      "active": 172
+    },
+    {
+      "drive_hz": 50,
+      "mn9_hz": 11.9,
+      "mn9_sd": 3.42,
+      "active": 334
+    },
+    {
+      "drive_hz": 100,
+      "mn9_hz": 63.4,
+      "mn9_sd": 4.0,
+      "active": 383
+    },
+    {
+      "drive_hz": 150,
+      "mn9_hz": 78.3,
+      "mn9_sd": 3.47,
+      "active": 425
+    },
+    {
+      "drive_hz": 200,
+      "mn9_hz": 89.5,
+      "mn9_sd": 4.84,
+      "active": 431
+    },
+    {
+      "drive_hz": 250,
+      "mn9_hz": 97.3,
+      "mn9_sd": 4.94,
+      "active": 440
+    }
+  ],
+  "D_corridor3_allsyn": [
+    {
+      "drive_hz": 28,
+      "mn9_hz": 0.0,
+      "mn9_sd": 0.0,
+      "active": 71
+    },
+    {
+      "drive_hz": 37,
+      "mn9_hz": 1.6,
+      "mn9_sd": 1.62,
+      "active": 178
+    },
+    {
+      "drive_hz": 50,
+      "mn9_hz": 9.9,
+      "mn9_sd": 4.37,
+      "active": 290
+    },
+    {
+      "drive_hz": 100,
+      "mn9_hz": 62.0,
+      "mn9_sd": 4.52,
+      "active": 355
+    },
+    {
+      "drive_hz": 150,
+      "mn9_hz": 78.7,
+      "mn9_sd": 4.03,
+      "active": 387
+    },
+    {
+      "drive_hz": 250,
+      "mn9_hz": 96.1,
+      "mn9_sd": 4.93,
+      "active": 410
+    }
+  ]
+}

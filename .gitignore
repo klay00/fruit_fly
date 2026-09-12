@@ -5,3 +5,12 @@ __pycache__/
 node_modules/
 .nuxt/
 .output/
+engine/*.dylib
+engine/*.wasm
+engine/*.o
+web/node_modules/
+web/.nuxt/
+web/.output/
+web/.npm-cache/
+web/public/brain/net.bin
+web/public/brain/lif.wasm

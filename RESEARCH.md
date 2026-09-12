@@ -6,7 +6,11 @@
 > *Drosophila melanogaster* brain, simulate it, and then give it a body it never evolved for.
 > The brain is not modified. Only the body changes.
 
-**Status:** Phase 0 complete — connectome pipeline builds and self-verifies.
+**Status:** Phases 0-3b gates **passed**. Reduction: 7,402 neurons (5.3%), threshold
+preserved, 2.2% reduction error, 4.5% engine error (`results/phase3/GATE.md`). Phase 4 control shipped: a 20,218-neuron brain drives a fly
+body in the browser (`results/phase4/GATE.md`). Live engine: C/WASM, **1.6-2.4x real time** on the full
+38,197-neuron multimodal network -- WebGPU proved unnecessary.
+Building on FlyWire **v783**; the v630→v783 shift in MN9 rate is ~1.5 %, inside trial noise.
 **Audience:** computational neuroscientists, simulation engineers, and curious readers.
 
 ---
@@ -190,8 +194,11 @@ produces which DN pattern, under which internal state. Output: a cited, reproduc
 **DN primitive library** + the recorded traces that back every claim on the website.
 
 **Tier 2 — live, in-browser, reduced.** A sparse LIF network of only the neurons on the
-sensory→DN paths that matter (expect ~5–15k after graph reduction from Tier 1 — a real number
-to be measured, not guessed), running in a WebGPU compute shader or wasm worker. It drives the
+sensory→DN paths that matter. ~~Expect ~5-15k after graph reduction~~ — **measured: 38,197
+neurons and 4.5M edges** for chemosensory + mechanosensory + looming input driving the full
+1,299-neuron descending vector. The estimate above was wrong by 3-8x; the fly brain is too
+small-world for a tight multimodal corridor (see `results/phase3/GATE.md` addendum). Runs in
+a WebGPU compute shader or wasm worker. It drives the
 dragon autonomously and in real time. The reduction is **derived from Tier 1 and validated
 against it**, not hand-designed.
 

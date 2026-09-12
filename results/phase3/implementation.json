@@ -1,0 +1,74 @@
+{
+  "ours": [
+    {
+      "drive_hz": 28,
+      "mn9_hz": 0.0,
+      "active": 68
+    },
+    {
+      "drive_hz": 37,
+      "mn9_hz": 1.0,
+      "active": 177
+    },
+    {
+      "drive_hz": 50,
+      "mn9_hz": 10.7,
+      "active": 285
+    },
+    {
+      "drive_hz": 100,
+      "mn9_hz": 59.2,
+      "active": 349
+    },
+    {
+      "drive_hz": 150,
+      "mn9_hz": 76.4,
+      "active": 367
+    },
+    {
+      "drive_hz": 250,
+      "mn9_hz": 96.7,
+      "active": 407
+    }
+  ],
+  "brian2": [
+    {
+      "drive_hz": 28,
+      "mn9_hz": 0.0,
+      "mn9_sd": 0.0,
+      "active": 71
+    },
+    {
+      "drive_hz": 37,
+      "mn9_hz": 1.6,
+      "mn9_sd": 1.62,
+      "active": 178
+    },
+    {
+      "drive_hz": 50,
+      "mn9_hz": 9.9,
+      "mn9_sd": 4.37,
+      "active": 290
+    },
+    {
+      "drive_hz": 100,
+      "mn9_hz": 62.0,
+      "mn9_sd": 4.52,
+      "active": 355
+    },
+    {
+      "drive_hz": 150,
+      "mn9_hz": 78.7,
+      "mn9_sd": 4.03,
+      "active": 387
+    },
+    {
+      "drive_hz": 250,
+      "mn9_hz": 96.1,
+      "mn9_sd": 4.93,
+      "active": 410
+    }
+  ],
+  "max_abs_hz": 2.799999999999997,
+  "median_rel": 0.0451612903225806
+}

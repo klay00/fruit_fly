@@ -1,0 +1,38 @@
+[
+  {
+    "drive_hz": 25,
+    "mn9_hz": 0.0,
+    "mn9_sd": 0.0,
+    "active": 65
+  },
+  {
+    "drive_hz": 50,
+    "mn9_hz": 11.9,
+    "mn9_sd": 3.42,
+    "active": 334
+  },
+  {
+    "drive_hz": 100,
+    "mn9_hz": 63.4,
+    "mn9_sd": 4.0,
+    "active": 383
+  },
+  {
+    "drive_hz": 150,
+    "mn9_hz": 78.3,
+    "mn9_sd": 3.47,
+    "active": 425
+  },
+  {
+    "drive_hz": 200,
+    "mn9_hz": 89.5,
+    "mn9_sd": 4.84,
+    "active": 431
+  },
+  {
+    "drive_hz": 250,
+    "mn9_hz": 97.3,
+    "mn9_sd": 4.94,
+    "active": 440
+  }
+]
