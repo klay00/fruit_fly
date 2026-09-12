@@ -1,0 +1,7 @@
+data/raw/
+data/*.npz
+__pycache__/
+.venv/
+node_modules/
+.nuxt/
+.output/

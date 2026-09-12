@@ -1,0 +1,12 @@
+[project]
+name = "fly-to-dragon"
+version = "0.1.0"
+description = "Can a fly be a dragon? A connectome-driven simulation."
+requires-python = ">=3.11"
+dependencies = ["numpy", "scipy", "pandas", "pyarrow"]
+
+[project.optional-dependencies]
+brain = ["brian2"]
+
+[tool.uv]
+package = false
