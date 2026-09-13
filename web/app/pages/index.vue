@@ -173,6 +173,7 @@ const kcActive = computed(() => last.value?.cands?.[0]?.kcActive ?? 0)
       <p class="warn">Only the KC→MBON synapses learn — the fly's own plastic site. The board
         encoder is ours and is declared as engineering. No search tree: one position, one value.</p>
       <p class="warn">{{ info.provenance.license }}</p>
+      <p class="by">Built by <a href="https://github.com/klay00" target="_blank" rel="noopener">klay00</a> · <a href="https://github.com/klay00" target="_blank" rel="noopener">github.com/klay00</a></p>
     </footer>
   </div>
 </template>
@@ -231,5 +232,8 @@ h2 { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color:
 .hist li.you { color: #9fd0b0; } .hist li.fly { color: #d29a4a; }
 .bottom-right p { font-size: 9.5px; color: #8a949b; margin: 0 0 5px; line-height: 1.6; }
 .warn { color: #98a3aa; }
+.by { margin-top: 8px !important; padding-top: 8px; border-top: 1px solid #2a3238; color: #8a949b; }
+.by a { color: #d29a4a; text-decoration: none; }
+.by a:hover, .by a:focus-visible { text-decoration: underline; outline: none; }
 @media (max-width: 900px) { .right, .bottom-right, .bottom-left { display: none; } .top-left { max-width: calc(100vw - 32px); } }
 </style>
