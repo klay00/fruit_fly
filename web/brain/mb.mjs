@@ -55,6 +55,7 @@ export class MushroomBody {
     const mb = new MushroomBody();
     mb.iface = await fetchJson('interface.json');
     const bin = await fetchBytes('net.bin');
+    try { mb.positions = new Float32Array(await fetchBytes('positions.bin')); } catch { mb.positions = null; }
     const { instance } = await WebAssembly.instantiate(await fetchBytes('lif.wasm'), {});
     mb.mem = instance.exports.memory;
     mb.run = instance.exports.lif_run_rates;
@@ -148,7 +149,7 @@ export class MushroomBody {
     }
     const mbonRate = new Float32Array(mbon.length);
     for (let i = 0; i < mbon.length; i++) mbonRate[i] = Number(this.i64[c + mbon[i]]) * k;
-    return { kcRate, mbonRate, kcActive: active / kc.length };
+    return { kcRate, mbonRate, pnRate: Float32Array.from(rates), kcActive: active / kc.length };
   }
 }
 

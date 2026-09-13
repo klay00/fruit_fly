@@ -1,7 +1,7 @@
 <script setup>
 import { Chess } from 'chess.js'
 
-const { ready, info, thinking, last, think } = useFly()
+const { ready, info, thinking, last, dopamine, think, observe, forget } = useFly()
 const game = new Chess()
 const fen = ref(game.fen())
 const human = ref('w')
@@ -53,6 +53,7 @@ async function onSquare(name) {
   if (selected.value && legalTo.value.includes(name)) {
     const mv = game.move({ from: selected.value, to: name, promotion: 'q' })
     applyMove(mv); selected.value = null
+    if (history.value.length > 1) observe(game.fen())     // the reply to its last move: learn
     await flyTurn()
     return
   }
@@ -121,25 +122,40 @@ const kcActive = computed(() => last.value?.cands?.[0]?.kcActive ?? 0)
 
     <section class="hud right" v-if="ready">
       <h2>What the fly is thinking</h2>
-      <p class="sub" v-if="last">{{ cands.length }} legal moves evaluated · {{ last.ms.toFixed(0) }} ms ·
+      <p class="sub" v-if="last">{{ cands.length }} moves · top {{ cands.filter(c => c.rehearsed).length }}
+        rehearsed against every reply · {{ (last.ms / 1000).toFixed(1) }} s ·
         <b>{{ (kcActive * 100).toFixed(1) }}%</b> of Kenyon cells active</p>
-      <p class="sub" v-else>Every legal move is played on an inner board and run through the
-        network. One position, one value. No search.</p>
+      <p class="sub" v-else>The fly plays each move on an inner board, imagines your replies
+        with its own evaluator, and keeps the one that survives the reply it fears most.
+        After you actually reply, the difference between what it expected and what happened
+        is its dopamine — and moves its synapses. It learns while playing you.</p>
+      <BrainMap v-if="info?.positions" :positions="info.positions" :groups="info.groups"
+                :pn="last?.pn ?? []" :kc="last?.kc ?? []" :mbon="last?.mbon ?? []" :thinking="thinking" />
+      <p class="sub mapnote">5,960 neurons at their real positions in the FlyWire brain, lit by
+        their firing for the chosen position. Input enters at the blue antennal-lobe neurons,
+        is sparsified by the orange Kenyon cells, read out by the red MBONs.</p>
+
+      <div class="dopa" v-if="dopamine && dopamine.learned">
+        <h2>Dopamine · last exchange</h2>
+        <p class="sub">predicted <b>{{ dopamine.predicted.toFixed(3) }}</b> · got
+          <b>{{ (dopamine.reward + 0.7 * dopamine.next).toFixed(3) }}</b> →
+          <b :class="dopamine.delta > 0 ? 'pos' : 'neg'">δ {{ dopamine.delta > 0 ? '+' : '' }}{{ dopamine.delta.toFixed(3) }}</b>
+          <span class="tag" v-if="dopamine.reward > 0">reward</span>
+          <span class="tag neg" v-else-if="dopamine.reward < 0">punishment</span></p>
+        <p class="sub">{{ dopamine.learned }} synapse updates this session
+          <button class="mini" @click="forget()" title="reset what it learned here">forget</button></p>
+      </div>
+
       <ol class="cands" v-if="cands.length">
-        <li v-for="(c, i) in cands.slice(0, 10)" :key="c.san" :class="{ top: i === 0 }">
+        <li v-for="(c, i) in cands.slice(0, 10)" :key="c.san" :class="{ top: i === 0, dim: !c.rehearsed }">
           <span class="rank">{{ i + 1 }}</span>
           <span class="san">{{ c.san }}<i v-if="c.capture">×</i></span>
           <span class="bar"><i :style="{ width: Math.max(2, 50 + c.value * 40) + '%' }" /></span>
-          <span class="val">{{ c.terminal !== null ? (c.terminal > 0 ? 'mate' : 'draw') : c.value.toFixed(3) }}</span>
+          <span class="val">{{ c.value.toFixed(3) }}</span>
+          <span class="fear" v-if="c.feared">fears {{ c.feared }}</span>
+          <span class="fear" v-else-if="!c.rehearsed">not rehearsed</span>
         </li>
       </ol>
-      <div class="kc" v-if="showKC && kcGrid.length">
-        <h2>Kenyon cell population <button class="mini" @click="showKC = false">–</button></h2>
-        <div class="grid">
-          <i v-for="(v, i) in kcGrid" :key="i" :style="{ opacity: 0.08 + v * 0.92 }" />
-        </div>
-        <p class="sub">the sparse code for the chosen position — 5,177 cells in 400 bins</p>
-      </div>
     </section>
 
     <section class="hud bottom-left" v-if="history.length">
@@ -199,6 +215,16 @@ h2 { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color:
 .kc { margin-top: 14px; }
 .grid { display: grid; grid-template-columns: repeat(20, 1fr); gap: 1.5px; margin: 6px 0; }
 .grid i { display: block; aspect-ratio: 1; background: #d29a4a; border-radius: 1px; }
+.mapnote { margin: 8px 0 12px; font-size: 10.5px; }
+.dopa { margin: 0 0 12px; padding: 10px 12px; background: #1a2126; border-radius: 3px; border-left: 2px solid #d29a4a; }
+.dopa h2 { margin-bottom: 6px; }
+.pos { color: #9fd0b0 !important; } .neg { color: #e4574f !important; }
+.tag { font-size: 9px; letter-spacing: .08em; text-transform: uppercase; padding: 1px 6px; border-radius: 2px;
+  background: #24402f; color: #9fd0b0; margin-left: 6px; }
+.tag.neg { background: #43242a; color: #e4574f; }
+.cands li { grid-template-columns: 18px 58px 1fr 48px auto; }
+.cands li.dim { opacity: .45; }
+.fear { font-size: 9px; color: #8a949b; white-space: nowrap; }
 .hist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; font-size: 11px; }
 .hist li.you { color: #9fd0b0; } .hist li.fly { color: #d29a4a; }
 .bottom-right p { font-size: 9.5px; color: #8a949b; margin: 0 0 5px; line-height: 1.6; }

@@ -58,6 +58,23 @@ def main() -> None:
             "license": "connectome data CC BY-NC 4.0 - non-commercial use only",
         },
     }
+    # Real anatomy: every neuron's position in the FlyWire brain, in the order of `keep`.
+    # Soma where annotated, else a point on the arbor. Normalised to a unit box so the
+    # page can draw the actual mushroom body -- calyx, lobes, antennal lobe -- not a diagram.
+    ann = a.set_index("root_id")
+    P = np.zeros((len(keep), 3), dtype=np.float32)
+    for i, k in enumerate(keep):
+        row = ann.loc[int(ids[k])]
+        xyz = [row["soma_x"], row["soma_y"], row["soma_z"]]
+        if any(np.isnan(float(v)) for v in xyz):
+            xyz = [row["pos_x"], row["pos_y"], row["pos_z"]]
+        P[i] = xyz
+    lo, hi = P.min(0), P.max(0)
+    P = (P - lo) / (hi - lo).max()
+    with open(OUT / "positions.bin", "wb") as f:
+        f.write(P.astype(np.float32).tobytes())
+    iface["positions"] = "positions.bin"
+
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "interface.json").write_text(json.dumps(iface))
     with open(OUT / "net.bin", "wb") as f:
