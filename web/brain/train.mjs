@@ -30,7 +30,11 @@ const opponents = {
 };
 
 const buffer = [];                       // replay: { kc, target }
-const BUF = 3000, GAMMA = 0.97, ETA = 0.01;
+// Short horizon on purpose. With gamma 0.97 every position in a lost game got the same
+// -1.5 target whatever its move was, and the readout learned "everything is bad". A
+// two-to-three-ply return is what gate 2 trains on and what a one-ply evaluator can
+// actually be responsible for. The game outcome enters at a small weight.
+const BUF = 3000, GAMMA = 0.6, OUTCOME_W = 0.3, ETA = 0.01;
 
 function play(oppName, gameNo) {
   const g = new Chess();
@@ -38,7 +42,7 @@ function play(oppName, gameNo) {
   const eps = Math.max(0.05, 0.4 * Math.exp(-gameNo / 150));
   const visited = [];                    // fly's positions: { kc, matBefore, matAfter }
   let plies = 0;
-  while (!g.isGameOver() && plies < 200) {
+  while (!g.isGameOver() && plies < 140) {
     if (g.turn() === fly) {
       const before = material(g, fly);
       const cands = think(mb, ro, g, fly, gameNo * 1000 + plies);
@@ -55,10 +59,12 @@ function play(oppName, gameNo) {
   let result = 0;
   if (g.isCheckmate()) result = g.turn() === fly ? -1 : 1;
   // discounted return from each fly position to the end of the game
-  let G = result;
+  let G = 0;
   for (let i = visited.length - 1; i >= 0; i--) {
     G = visited[i].r + GAMMA * G;
-    buffer.push({ kc: visited[i].kc, target: Math.max(-1.5, Math.min(1.5, G)) });
+    const horizon = visited.length - i;                   // plies to the end
+    const outcome = result * OUTCOME_W * Math.pow(0.9, horizon);
+    buffer.push({ kc: visited[i].kc, target: Math.max(-1.5, Math.min(1.5, G + outcome)) });
   }
   while (buffer.length > BUF) buffer.shift();
   // replay: a few passes, the rule itself
@@ -71,7 +77,7 @@ const t0 = Date.now();
 let wins = 0, draws = 0, losses = 0;
 for (let i = 0; i < GAMES; i++) {
   const n = log.length;
-  const opp = n < 150 ? 'random' : 'greedy';
+  const opp = n < 100 ? "random" : "greedy";
   const r = play(opp, n);
   if (r.result > 0) wins++; else if (r.result < 0) losses++; else draws++;
   log.push({ n, opp, result: r.result, plies: r.plies, mat: r.matEnd, eps: +r.eps.toFixed(3) });

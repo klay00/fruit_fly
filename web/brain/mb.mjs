@@ -8,7 +8,14 @@
 import { Chess } from 'chess.js';
 
 const PIECES = 'PNBRQKpnbrqk';
-export const N_FEAT = 64 * 12;
+export const N_SQ_FEAT = 64 * 12;
+/* Plus 128 threat bits: my piece on square s is attacked / their piece on s is attacked.
+ * The fly's eye computes motion before the brain sees it; this is the same kind of
+ * peripheral preprocessing. Without it the net learned to grab material and never to
+ * keep it: after 270 games vs a one-ply capturer it was still 25 points down at the end,
+ * because "my piece is attacked" is a relation between two squares that a projection of
+ * piece positions does not carry. Declared as part of the encoder, which is ours. */
+export const N_FEAT = N_SQ_FEAT + 128;
 export const SIM_MS = 25;
 
 /* Board -> 768 bits, from `color`'s point of view: "my queen on e4" is the same feature
@@ -25,6 +32,10 @@ export function features(chess, color = chess.turn()) {
     const mine = p.color === (white ? 'w' : 'b');
     const t = 'pnbrqk'.indexOf(p.type) + (mine ? 0 : 6);
     f[(rr * 8 + c) * 12 + t] = 1;
+    const sqName = 'abcdefgh'[c] + (8 - r);
+    const them = white ? 'b' : 'w';
+    if (mine && chess.isAttacked(sqName, them)) f[N_SQ_FEAT + rr * 8 + c] = 1;
+    if (!mine && chess.isAttacked(sqName, white ? 'w' : 'b')) f[N_SQ_FEAT + 64 + rr * 8 + c] = 1;
   }
   return f;
 }
@@ -88,9 +99,12 @@ export class MushroomBody {
     const typeGroup = [];
     let cursor = 0;
     for (let t = 0; t < 12; t++) { typeGroup.push(Array.from({ length: TYPE_PNS }, (_, i) => cursor + i)); cursor += TYPE_PNS; }
+    const threatGroup = [Array.from({ length: TYPE_PNS }, (_, i) => cursor + i),
+                         Array.from({ length: TYPE_PNS }, (_, i) => cursor + TYPE_PNS + i)];
+    cursor += 2 * TYPE_PNS;
     this.enc = [];
     for (let f = 0; f < N_FEAT; f++) {
-      const hits = [...typeGroup[f % 12]];
+      const hits = f < N_SQ_FEAT ? [...typeGroup[f % 12]] : [...threatGroup[f < N_SQ_FEAT + 64 ? 0 : 1]];
       for (let p = cursor; p < pn.length; p++) if (r() < 0.03) hits.push(p);
       this.enc.push(hits);
     }

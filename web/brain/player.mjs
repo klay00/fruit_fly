@@ -19,12 +19,15 @@ export function think(mb, readout, chess, color, seed = 1) {
     const feat = features(chess, color);
     const r = mb.evaluate(feat, seed);
     const v = readout.value(r.kcRate);
-    // terminal states are facts, not opinions
+    // `terminal` is a LABEL for the display only. It never touches `value`: an earlier
+    // version set mate to +1 and draw to 0 by rule, which quietly made the chooser part
+    // rulebook. The fly either learns that mate is good from the +-1 game reward, or it
+    // walks past mates -- and that is a result, not a bug to patch over.
     let terminal = null;
-    if (chess.isCheckmate()) terminal = 1;             // the mover just mated
+    if (chess.isCheckmate()) terminal = 1;
     else if (chess.isDraw()) terminal = 0;
     chess.undo();
-    out.push({ san: mv.san, from: mv.from, to: mv.to, value: terminal ?? v, net: v,
+    out.push({ san: mv.san, from: mv.from, to: mv.to, value: v, net: v,
                terminal, kcRate: r.kcRate, kcActive: r.kcActive, capture: !!mv.captured });
   }
   out.sort((a, b) => b.value - a.value);
