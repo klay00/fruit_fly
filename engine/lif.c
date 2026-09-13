@@ -31,8 +31,11 @@ static inline uint64_t xs(Net *s) {
 static inline float urand(Net *s) { return (float)((xs(s) >> 40) * (1.0 / 16777216.0)); }
 
 /* Advance one dt. Spiking neuron indices are written to out; returns how many. */
-int32_t lif_step(Net *s, const int32_t *driven, int32_t n_driven,
-                 float rate_hz, int32_t *out) {
+/* rates may be NULL, in which case every driven neuron fires at rate_hz. A per-neuron
+ * array is what an encoded input needs: a board position is not one odour at one
+ * concentration but hundreds of PNs at hundreds of rates. */
+int32_t lif_step_rates(Net *s, const int32_t *driven, const float *rates, int32_t n_driven,
+                       float rate_hz, int32_t *out) {
     const int32_t n = s->n;
     float *slot = s->ring + (int64_t)(s->k % s->dly) * n;
     int32_t n_out = 0;
@@ -54,10 +57,11 @@ int32_t lif_step(Net *s, const int32_t *driven, int32_t n_driven,
         slot[i] = 0.0f;
     }
 
-    if (rate_hz > 0.0f && n_driven > 0) {
-        const float p = rate_hz * s->dt / 1000.0f;
+    if ((rate_hz > 0.0f || rates) && n_driven > 0) {
+        const float p0 = rate_hz * s->dt / 1000.0f;
         for (int32_t d = 0; d < n_driven; d++) {
             int32_t i = driven[d];
+            const float p = rates ? rates[d] * s->dt / 1000.0f : p0;
             /* Draw for every driven neuron, then discard if refractory, so the Poisson
              * statistics match the reference whether or not the target can fire. */
             int fired = (urand(s) < p);
@@ -92,10 +96,23 @@ int32_t lif_step(Net *s, const int32_t *driven, int32_t n_driven,
 
 /* Accumulate spike counts over `steps`, which is what the rate measurements need and
  * keeps the per-step call overhead out of the benchmark. */
+int32_t lif_step(Net *s, const int32_t *driven, int32_t n_driven, float rate_hz,
+                 int32_t *out) {
+    return lif_step_rates(s, driven, 0, n_driven, rate_hz, out);
+}
+
 void lif_run(Net *s, const int32_t *driven, int32_t n_driven, float rate_hz,
              int32_t steps, int32_t *scratch, int64_t *counts) {
     for (int32_t t = 0; t < steps; t++) {
         int32_t m = lif_step(s, driven, n_driven, rate_hz, scratch);
+        for (int32_t j = 0; j < m; j++) counts[scratch[j]]++;
+    }
+}
+
+void lif_run_rates(Net *s, const int32_t *driven, const float *rates, int32_t n_driven,
+                   int32_t steps, int32_t *scratch, int64_t *counts) {
+    for (int32_t t = 0; t < steps; t++) {
+        int32_t m = lif_step_rates(s, driven, rates, n_driven, 0.0f, scratch);
         for (int32_t j = 0; j < m; j++) counts[scratch[j]]++;
     }
 }

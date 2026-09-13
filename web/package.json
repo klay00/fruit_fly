@@ -1,0 +1,11 @@
+{
+  "name": "fly-chess",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "nuxt dev", "build": "nuxt build", "generate": "nuxt generate",
+               "train": "node brain/train.mjs", "test": "node brain/gate1_sparseness.test.mjs" },
+  "dependencies": {
+    "@tresjs/nuxt": "^3.0.0", "chess.js": "^1.0.0", "nuxt": "^3.15.0",
+    "three": "^0.171.0", "vue": "^3.5.0"
+  }
+}

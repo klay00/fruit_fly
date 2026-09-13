@@ -14,3 +14,4 @@ web/.output/
 web/.npm-cache/
 web/public/brain/net.bin
 web/public/brain/lif.wasm
+.npm-cache
