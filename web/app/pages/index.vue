@@ -2,6 +2,7 @@
 import { Chess } from 'chess.js'
 
 const { ready, info, thinking, last, dopamine, think, observe, forget } = useFly()
+const { brain, arbors } = useAnatomy()
 const game = new Chess()
 const fen = ref(game.fen())
 const human = ref('w')
@@ -129,11 +130,12 @@ const kcActive = computed(() => last.value?.cands?.[0]?.kcActive ?? 0)
         with its own evaluator, and keeps the one that survives the reply it fears most.
         After you actually reply, the difference between what it expected and what happened
         is its dopamine — and moves its synapses. It learns while playing you.</p>
-      <BrainMap v-if="info?.positions" :positions="info.positions" :groups="info.groups"
+      <BrainMap :brain="brain" :arbors="arbors" :groups="info?.groups"
                 :pn="last?.pn ?? []" :kc="last?.kc ?? []" :mbon="last?.mbon ?? []" :thinking="thinking" />
-      <p class="sub mapnote">5,960 neurons at their real positions in the FlyWire brain, lit by
-        their firing for the chosen position. Input enters at the blue antennal-lobe neurons,
-        is sparsified by the orange Kenyon cells, read out by the red MBONs.</p>
+      <p class="sub mapnote">The FlyWire brain, with the real arbors of the circuit at their
+        measured positions, lit by their firing for the chosen position. Input enters at the
+        blue antennal-lobe neurons, is sparsified by the orange Kenyon cells, read out by the
+        red MBONs. Drag to turn.</p>
 
       <div class="dopa" v-if="dopamine && dopamine.learned">
         <h2>Dopamine · last exchange</h2>
@@ -184,7 +186,7 @@ html, body, #__nuxt { margin: 0; height: 100%; background: #151a1e; }
 .hud { position: absolute; background: rgba(21, 26, 30, .84); border: 1px solid #2a3238;
   border-radius: 4px; padding: 14px 16px; backdrop-filter: blur(8px); }
 .top-left { top: 16px; left: 16px; max-width: 380px; }
-.right { top: 16px; right: 16px; width: 330px; max-height: calc(100vh - 32px); overflow-y: auto; }
+.right { top: 16px; right: 16px; width: 400px; max-height: calc(100vh - 32px); overflow-y: auto; }
 .bottom-left { bottom: 16px; left: 16px; max-width: 380px; }
 .bottom-right { bottom: 16px; right: 16px; max-width: 330px; }
 .eyebrow { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: #8a949b; margin: 0 0 8px; }

@@ -1,121 +1,128 @@
 <script setup>
 /* The fly's brain, as it actually is.
  *
- * Every point is one of the 5,960 neurons in the circuit, at its measured position in
- * the FlyWire brain. Not a diagram: the calyx, the lobes and the antennal lobe are where
- * they are because that is where these cells are. Brightness is the cell's firing rate
- * for the position the fly chose; colour is what it is -- projection neuron, Kenyon cell,
- * MBON, APL. So you can see which part of the brain the decision passed through and
- * how much of it took part. */
+ * The shell is the FlyWire brain surface. Every line is a real arbor from the public 783
+ * skeletons, at its measured position: 685 projection neurons, all 96 MBONs, both APL, and
+ * one in twelve Kenyon cells. Colour is what the cell is; brightness is its firing for the
+ * position the fly chose -- so the decision can be traced through the anatomy it ran on.
+ * Anterior view, the way FlyWire draws it. The viewer turns it; nothing turns by itself. */
 import * as THREE from 'three'
-import { TresCanvas, useRenderLoop } from '@tresjs/core'
+import { TresCanvas, useRenderLoop, useTresContext } from '@tresjs/core'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 const props = defineProps({
-  positions: { type: Array, default: null },
-  groups: { type: Object, default: null },
-  pn: { type: Array, default: () => [] },
-  kc: { type: Array, default: () => [] },
-  mbon: { type: Array, default: () => [] },
-  thinking: { type: Boolean, default: false },
+  brain: Object, arbors: Object, groups: Object,
+  pn: { type: Array, default: () => [] }, kc: { type: Array, default: () => [] }, mbon: { type: Array, default: () => [] },
+  thinking: Boolean,
 })
 
-const COLOURS = { pn: new THREE.Color('#5bb0d6'), kc: new THREE.Color('#d29a4a'),
-                  mbon: new THREE.Color('#e4574f'), apl: new THREE.Color('#9fd0b0') }
-const DIM = 0.16
+const COL = { pn: new THREE.Color('#4fb3e8'), kc: new THREE.Color('#f0a640'), mbon: new THREE.Color('#ff4f6d'), apl: new THREE.Color('#8ee6c8') }
+const DIM = 0.22, S = 7            // brain drawn 7 units wide
 
-const n = computed(() => (props.positions ? props.positions.length / 3 : 0))
-const kind = computed(() => {
-  const k = new Uint8Array(n.value)             // 0 pn 1 kc 2 mbon 3 apl
+const kindOf = computed(() => {
+  const k = {}
   if (!props.groups) return k
-  for (const i of props.groups.kc) k[i] = 1
-  for (const i of props.groups.mbon) k[i] = 2
-  for (const i of props.groups.apl) k[i] = 3
+  for (const i of props.groups.pn) k[i] = 'pn'; for (const i of props.groups.kc) k[i] = 'kc'
+  for (const i of props.groups.mbon) k[i] = 'mbon'; for (const i of props.groups.apl) k[i] = 'apl'
   return k
 })
-
-const geometry = computed(() => {
-  const g = new THREE.BufferGeometry()
-  if (!props.positions) return g
-  const pos = new Float32Array(n.value * 3)
-  for (let i = 0; i < n.value * 3; i++) pos[i] = (props.positions[i] - 0.5) * 6
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-  g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n.value * 3), 3))
-  g.setAttribute('size', new THREE.BufferAttribute(new Float32Array(n.value).fill(1), 1))
-  return g
-})
-
-/* Activity per neuron in `keep` order, from the three group vectors. */
 const activity = computed(() => {
-  const a = new Float32Array(n.value)
+  const a = {}
   if (!props.groups) return a
   const put = (idx, rates, scale) => { for (let i = 0; i < idx.length && i < rates.length; i++) a[idx[i]] = Math.min(1, rates[i] / scale) }
-  put(props.groups.pn, props.pn, 220)
-  put(props.groups.kc, props.kc, 1)
-  put(props.groups.mbon, props.mbon, 120)
+  put(props.groups.pn, props.pn, 220); put(props.groups.kc, props.kc, 1); put(props.groups.mbon, props.mbon, 120)
   return a
 })
 
-const target = ref(new Float32Array(0))
-const current = ref(new Float32Array(0))
-watch(activity, (a) => { target.value = a; if (current.value.length !== a.length) current.value = new Float32Array(a.length) }, { immediate: true })
+/* Unit-box coordinates -> centred, y flipped (FlyWire y grows ventral), z toward viewer. */
+const place = (src) => {
+  const out = new Float32Array(src.length)
+  for (let i = 0; i < src.length; i += 3) { out[i] = (src[i] - 0.5) * S; out[i + 1] = (0.5 - src[i + 1]) * S * 0.5 * 2; out[i + 2] = (src[i + 2] - 0.5) * S }
+  return out
+}
+// the brain box is ~2.6:1.2:1 (x:y:z) in the unit frame; keep aspect by not re-scaling axes
+const brainGeo = computed(() => {
+  const g = new THREE.BufferGeometry()
+  if (!props.brain) return g
+  g.setAttribute('position', new THREE.BufferAttribute(place(props.brain.positions), 3))
+  g.setIndex(new THREE.BufferAttribute(props.brain.index, 1)); g.computeVertexNormals()
+  return g
+})
+const lineGeo = computed(() => {
+  const g = new THREE.BufferGeometry()
+  if (!props.arbors) return g
+  const pos = place(props.arbors.positions)
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+  g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(pos.length), 3))
+  return g
+})
 
-const pointsRef = shallowRef()
-const { onLoop } = useRenderLoop()
-onLoop(({ delta, elapsed }) => {
-  const g = geometry.value, col = g.getAttribute('color'), sz = g.getAttribute('size')
-  if (!col || !current.value.length) return
-  const k = kind.value, cur = current.value, tgt = target.value
-  const ease = Math.min(1, delta * 6)
-  const pulse = props.thinking ? 0.5 + 0.5 * Math.sin(elapsed * 6) : 0
-  const c = new THREE.Color()
-  for (let i = 0; i < n.value; i++) {
-    cur[i] += (tgt[i] - cur[i]) * ease
-    const base = COLOURS[['pn', 'kc', 'mbon', 'apl'][k[i]]]
-    const v = cur[i]
-    // dim resting cells to a ghost of their colour; active ones burn toward white
-    c.copy(base).multiplyScalar(DIM + v * 0.9).lerp(new THREE.Color('#fff4e0'), v * 0.45)
-    if (props.thinking && k[i] === 1 && v < 0.05) c.multiplyScalar(1 + pulse * 0.6)
-    col.setXYZ(i, c.r, c.g, c.b)
-    sz.setX(i, k[i] === 1 ? 1 + v * 2.2 : k[i] === 2 ? 2.2 + v * 3 : k[i] === 3 ? 3.5 : 1.6 + v * 1.5)
+const cur = {}
+function paint(ease = 1) {
+  const col = lineGeo.value.getAttribute('color'); if (!col || !props.arbors) return
+  const per = props.arbors.neuron, k = kindOf.value, tgt = activity.value, c = new THREE.Color()
+  let last = -1
+  for (let s = 0; s < per.length; s++) {
+    const n = per[s]
+    if (n !== last) {
+      last = n
+      cur[n] = (cur[n] ?? 0) + ((tgt[n] ?? 0) - (cur[n] ?? 0)) * ease
+      const v = cur[n], base = COL[k[n]] ?? COL.kc
+      c.copy(base).multiplyScalar(DIM + v * 1.1).lerp(new THREE.Color('#fff8ea'), v * 0.5)
+    }
+    const i = s * 6
+    col.array[i] = c.r; col.array[i + 1] = c.g; col.array[i + 2] = c.b
+    col.array[i + 3] = c.r; col.array[i + 4] = c.g; col.array[i + 5] = c.b
   }
-  col.needsUpdate = true; sz.needsUpdate = true
-  if (pointsRef.value) pointsRef.value.rotation.y = elapsed * 0.12
-})
+  col.needsUpdate = true
+}
+let settle = 0
+watch([activity, lineGeo], () => { settle = 30 }, { immediate: true })
+const { onLoop } = useRenderLoop()
+onLoop(() => { if (settle > 0) { paint(0.25); settle-- } })
 
-const vert = `attribute float size; varying vec3 vC;
-  void main(){ vC = color; vec4 mv = modelViewMatrix * vec4(position,1.0);
-  gl_PointSize = size * (140.0 / -mv.z); gl_Position = projectionMatrix * mv; }`
-const frag = `varying vec3 vC; void main(){ vec2 d = gl_PointCoord - 0.5; float r = dot(d,d);
-  if (r > 0.25) discard; float a = smoothstep(0.25, 0.05, r);
-  gl_FragColor = vec4(vC * (0.6 + 0.8 * a), a); }`
+const Rig = defineComponent({ setup() {
+  const { camera, renderer } = useTresContext(); let c
+  onMounted(() => { c = new OrbitControls(camera.value, renderer.value.domElement); c.enableDamping = true
+    c.minDistance = 4; c.maxDistance = 20; c.enablePan = false })
+  onLoop(() => c?.update()); onUnmounted(() => c?.dispose()); return () => null } })
 
-const counts = computed(() => {
-  const act = (arr, thr) => arr.filter((v) => v > thr).length
-  return { pn: act(props.pn, 1), kc: act(props.kc, 0), mbon: act(props.mbon, 0.5) }
-})
+const counts = computed(() => ({
+  pn: props.pn.filter((v) => v > 1).length, kc: props.kc.filter((v) => v > 0).length, mbon: props.mbon.filter((v) => v > 0.5).length,
+}))
 </script>
 
 <template>
-  <div class="map">
-    <TresCanvas clear-color="#0f1316" :alpha="false">
-      <TresPerspectiveCamera :position="[0, 1.2, 6.2]" :look-at="[0, 0, 0]" :args="[38, 1, 0.1, 50]" />
-      <TresPoints ref="pointsRef" :geometry="geometry">
-        <TresShaderMaterial :vertex-shader="vert" :fragment-shader="frag" :vertex-colors="true"
-                            :transparent="true" :depth-write="false" :blending="THREE.AdditiveBlending" />
-      </TresPoints>
+  <div class="map" :class="{ thinking }">
+    <TresCanvas clear-color="#070b14">
+      <TresPerspectiveCamera :position="[0, 0.3, 9]" :look-at="[0, 0, 0]" :args="[36, 1.6, 0.1, 60]" />
+      <Rig />
+      <TresAmbientLight :intensity="0.35" color="#6f8fbf" />
+      <TresDirectionalLight :position="[3, 6, 8]" :intensity="0.9" color="#bcd3ff" />
+      <TresMesh :geometry="brainGeo" :render-order="2">
+        <TresMeshPhysicalMaterial color="#1a2a55" :transparent="true" :opacity="0.28" :roughness="0.35"
+                                  :metalness="0.1" :side="THREE.DoubleSide" :depth-write="false" />
+      </TresMesh>
+      <TresLineSegments :geometry="lineGeo" :render-order="1">
+        <TresLineBasicMaterial :vertex-colors="true" :transparent="true" :opacity="0.95"
+                               :blending="THREE.AdditiveBlending" :depth-write="false" />
+      </TresLineSegments>
     </TresCanvas>
     <ul class="legend">
-      <li><i style="background:#5bb0d6" /> projection neurons <b>{{ counts.pn }}</b>/{{ groups?.pn.length ?? 0 }}</li>
-      <li><i style="background:#d29a4a" /> Kenyon cells <b>{{ counts.kc }}</b>/{{ groups?.kc.length ?? 0 }}</li>
-      <li><i style="background:#e4574f" /> MBONs <b>{{ counts.mbon }}</b>/{{ groups?.mbon.length ?? 0 }}</li>
-      <li><i style="background:#9fd0b0" /> APL (inhibition) {{ groups?.apl.length ?? 0 }}</li>
+      <li><i style="background:#4fb3e8" /> projection neurons <b>{{ counts.pn }}</b>/{{ groups?.pn.length ?? 0 }}</li>
+      <li><i style="background:#f0a640" /> Kenyon cells <b>{{ counts.kc }}</b>/{{ groups?.kc.length ?? 0 }} <span>(1 in 12 drawn)</span></li>
+      <li><i style="background:#ff4f6d" /> MBONs <b>{{ counts.mbon }}</b>/{{ groups?.mbon.length ?? 0 }}</li>
+      <li><i style="background:#8ee6c8" /> APL</li>
     </ul>
+    <p class="hint" v-if="!arbors">loading arbors…</p>
   </div>
 </template>
 
 <style scoped>
-.map { position: relative; width: 100%; aspect-ratio: 1.15; border-radius: 4px; overflow: hidden; border: 1px solid #2a3238; }
+.map { position: relative; width: 100%; aspect-ratio: 1.6; border-radius: 4px; overflow: hidden; border: 1px solid #2a3238; }
+.map.thinking { box-shadow: inset 0 0 0 1px #d29a4a66; }
 .legend { position: absolute; left: 8px; bottom: 6px; margin: 0; padding: 0; list-style: none; font-size: 9.5px; color: #98a3aa; line-height: 1.6; }
 .legend i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
-.legend b { color: #e6e1d6; }
+.legend b { color: #e6e1d6; } .legend span { color: #5f6b72; }
+.hint { position: absolute; inset: 0; margin: 0; display: grid; place-items: center; font-size: 11px; color: #d29a4a; }
 </style>
